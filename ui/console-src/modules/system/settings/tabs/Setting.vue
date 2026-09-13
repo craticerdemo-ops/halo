@@ -56,7 +56,8 @@ const handleSaveConfigMap = async (data: Record<string, unknown>) => {
 
     if (group.value === "basic") {
       const language = data.language;
-      document.cookie = `language=${language}; path=/; SameSite=Lax; Secure`;
+      const secure = window.location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `language=${language}; path=/; SameSite=Lax${secure}`;
       await setLanguage(language as string);
     }
 

@@ -49,6 +49,12 @@ async function initApp() {
     const globalInfoStore = stores.globalInfo();
     await globalInfoStore.fetchGlobalInfo();
 
+    // Re-apply from the persisted system locale: the cookie read above may be
+    // absent over HTTP (Secure flag) or stale, whereas globalInfo is authoritative.
+    if (globalInfoStore.globalInfo?.locale) {
+      await setLanguage(globalInfoStore.globalInfo.locale);
+    }
+
     if (currentUserStore.isAnonymous) {
       setupAppComponents();
       return;
