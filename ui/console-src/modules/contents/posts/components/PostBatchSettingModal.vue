@@ -270,6 +270,7 @@ function onSubmit(data: FormData) {
           :label="$t('core.post.batch_setting_modal.fields.owner_value')"
           name="value"
           type="userSelect"
+          :auto-select="false"
         ></FormKit>
       </FormKit>
       <FormKit

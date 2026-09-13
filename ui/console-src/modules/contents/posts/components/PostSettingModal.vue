@@ -448,6 +448,7 @@ const showCancelPublishButton = computed(() => {
               v-model="formState.spec.owner"
               :label="$t('core.post.settings.fields.owner.label')"
               type="userSelect"
+              :auto-select="false"
             ></FormKit>
             <FormKit
               v-model="formState.spec.allowComment"
