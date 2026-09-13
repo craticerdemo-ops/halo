@@ -101,3 +101,6 @@ coverage
 storybook-static
 tsconfig.tsbuildinfo
 .tgz
+
+### OpenCode runtime state
+.omo/
