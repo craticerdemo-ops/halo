@@ -1,9 +1,12 @@
 package run.halo.app.content.impl;
 
+import static run.halo.app.extension.index.query.Queries.equal;
 import static run.halo.app.extension.index.query.Queries.in;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -43,6 +46,8 @@ import run.halo.app.infra.ConditionStatus;
 @Slf4j
 @Component
 public class PostServiceImpl extends AbstractContentService implements PostService {
+    private static final DateTimeFormatter SLUG_TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
+
     private final ReactiveExtensionClient client;
     private final CounterService counterService;
     private final UserService userService;
@@ -173,7 +178,11 @@ public class PostServiceImpl extends AbstractContentService implements PostServi
     public Mono<Post> draftPost(PostRequest postRequest) {
         return Mono.defer(() -> {
                     var post = postRequest.post();
-
+                    return generateUniqueSlug()
+                            .doOnNext(slug -> post.getSpec().setSlug(slug))
+                            .thenReturn(post);
+                })
+                .flatMap(post -> {
                     if (post.getSpec().getOwner() != null) {
                         return Mono.just(post);
                     }
@@ -223,6 +232,29 @@ public class PostServiceImpl extends AbstractContentService implements PostServi
                 }))
                 .retryWhen(Retry.backoff(5, Duration.ofMillis(100))
                         .filter(OptimisticLockingFailureException.class::isInstance));
+    }
+
+    private Mono<String> generateUniqueSlug() {
+        var prefix = LocalDateTime.now().format(SLUG_TIMESTAMP_FORMATTER);
+        return findUniqueSlug(prefix, 1);
+    }
+
+    private Mono<String> findUniqueSlug(String prefix, int sequence) {
+        var slug = prefix + "-" + String.format("%04d", sequence);
+        return isSlugUnique(slug).flatMap(unique -> {
+            if (unique || sequence >= 9999) {
+                return Mono.just(slug);
+            }
+            return findUniqueSlug(prefix, sequence + 1);
+        });
+    }
+
+    private Mono<Boolean> isSlugUnique(String slug) {
+        var listOptions = new ListOptions();
+        listOptions.setFieldSelector(FieldSelector.of(equal("spec.slug", slug)));
+        return client.listBy(Post.class, listOptions, PageRequestImpl.ofSize(1))
+                .map(listResult -> listResult.getTotal() == 0)
+                .defaultIfEmpty(true);
     }
 
     @Override
