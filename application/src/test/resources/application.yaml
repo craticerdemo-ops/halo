@@ -5,8 +5,8 @@ spring:
     ansi:
       enabled: detect
   r2dbc:
+    url: r2dbc:h2:mem:///halo-test?MODE=MySQL&DB_CLOSE_DELAY=-1
     name: halo-test
-    generate-unique-name: true
   sql:
     init:
       mode: always
