@@ -6,16 +6,16 @@ no npm dependencies, and no server-side scraping.
 
 - Script: [`zhihu-archive.user.js`](./zhihu-archive.user.js)
 - Payload schema version: **1** (`schemaVersion: 1`)
-- Client version: **1.0.5** (independent from the Halo server version)
+- Client version: **1.0.7** (independent from the Halo server version)
 
 ## Supported URL types
 
-| Page type |                            URL pattern                             |     Zhihu API used      |                Comments                 |
-|-----------|--------------------------------------------------------------------|-------------------------|-----------------------------------------|
-| Article   | `https://zhuanlan.zhihu.com/p/<id>`                                | `/api/v4/articles/<id>` | `comment_v5/articles/<id>/root_comment` |
-| Answer    | `https://www.zhihu.com/question/<qid>/answer/<aid>` (id = `<aid>`) | `/api/v4/answers/<aid>` | `comment_v5/answers/<aid>/root_comment` |
-| Pin       | `https://www.zhihu.com/pin/<id>`                                   | `/api/v4/pins/<id>`     | `comment_v5/pins/<id>/root_comment`     |
-| Video     | `https://www.zhihu.com/zvideo/<id>`                                | `/api/v4/zvideos/<id>`  | Not fetched (see limitations)           |
+| Page type |                            URL pattern                             |                     Zhihu API used                     |                Comments                 |
+|-----------|--------------------------------------------------------------------|--------------------------------------------------------|-----------------------------------------|
+| Article   | `https://zhuanlan.zhihu.com/p/<id>`                                | `js-initialData` → `/api/articles/<id>` → rendered DOM | `comment_v5/articles/<id>/root_comment` |
+| Answer    | `https://www.zhihu.com/question/<qid>/answer/<aid>` (id = `<aid>`) | `/api/v4/answers/<aid>`                                | `comment_v5/answers/<aid>/root_comment` |
+| Pin       | `https://www.zhihu.com/pin/<id>`                                   | `/api/v4/pins/<id>`                                    | `comment_v5/pins/<id>/root_comment`     |
+| Video     | `https://www.zhihu.com/zvideo/<id>`                                | `/api/v4/zvideos/<id>`                                 | Not fetched (see limitations)           |
 
 Any other page (including HTTP, other hosts, profile pages, and question pages without an
 answer id) shows a disabled `Capture & send` button and an explanation.
@@ -26,12 +26,26 @@ endpoint returns `200` with an empty `data` array while the source still reports
 retries the same page against the legacy `/api/v4/<resource>/<id>/comments` list
 (`order=normal&limit=20&status=open`) before giving up. If both APIs return no root
 comments, the capture aborts with `COMMENTS_UNAVAILABLE` instead of submitting a snapshot
-that claims `0` comments. Child comments use the same pattern
+that claims `0` comments. If a comment request instead fails at the network layer, the
+script retries that single URL once through `GM_xmlhttpRequest` (which bypasses CORS); if the
+comment APIs stay unreachable, it submits the capture with an empty comment list and reports
+the failure as a warning, so the article itself is still archived. Child comments use the
+same pattern
 (`comment_v5/comment/<rootId>/child_comment` → `api.zhihu.com/comments/<rootId>/child_comments`).
 
 The answer detail request appends an explicit `?include=` list (`content,excerpt,...`),
 because Zhihu omits `content` and `excerpt` from `/api/v4/answers/<id>` unless they are
 requested. Article and pin detail responses already carry their content.
+
+Zhihu gates `www.zhihu.com/api/v4/articles/<id>` behind an `x-zse-96` request signature, so
+it always answers `403` code `10003` in a browser page even when signed in. The userscript
+therefore reads an article from the page itself, in this order: the SSR entity in
+`script#js-initialData` (`initialState.entities.articles[<id>]`), then the column API
+`https://zhuanlan.zhihu.com/api/articles/<id>`, then the rendered article DOM
+(`.Post-RichText`, `.Post-Title`, `.AuthorInfo-name`, `.ContentItem-time`). A fallback is
+reported as a warning in the panel; if all three sources are empty, capture aborts with the
+original error. Answers, pins, and videos still use their `www.zhihu.com/api/v4/...`
+endpoints.
 
 ## Installation
 
@@ -163,7 +177,7 @@ The userscript emits exactly the fields of the backend DTOs in
       }
     ]
   },
-  "capture": { "capturedAt": "2026-01-01T00:00:00Z", "clientVersion": "1.0.5" },
+  "capture": { "capturedAt": "2026-01-01T00:00:00Z", "clientVersion": "1.0.7" },
   "assets": { "items": [{ "url": "https://...", "type": "IMAGE|AVATAR|EQUATION|POSTER|VIDEO" }] }
 }
 ```
@@ -218,12 +232,14 @@ adaptation of unknown shapes.
   at most 3 legacy root pages and uses numeric offsets for legacy child pages. Legacy root
   entries do not carry a child-comment count, so replies for selected legacy roots are
   always probed. The legacy root list for articles may `404`; the script then tries the
-  `api.zhihu.com` host once. Risk control (`40362`) and network errors are never retried.
-- **Article signature.** Zhihu may reject `/api/v4/articles/<id>` with `403` code `10003`
-  because the API expects an `x-zse-96` signature. The userscript runs in the page context
-  and uses the page's own `fetch`, but cannot mint a signature itself. It surfaces the exact
-  failure and does not retry. Reload the Zhihu tab while signed in and retry; if the page's
-  own signed wrapper is required, capture from a normal logged-in article tab.
+  `api.zhihu.com` host once. Risk control (`40362`) is never retried; a network-level failure is tried once more through `GM_xmlhttpRequest` against the same URL, and HTTP-level errors are not retried.
+- **Article signature.** `www.zhihu.com/api/v4/articles/<id>` always answers `403` code
+  `10003` because it expects an `x-zse-96` signature that a page-context `fetch` does not
+  add. The userscript does not mint signatures; it captures the article from the page's
+  `js-initialData`, then the column API, then the rendered DOM. The article body therefore
+  comes from what the signed-in page already displays, and the comment APIs remain
+  unaffected. If a page is rendered without a readable body (login wall, risk control, or
+  an SSR interstitial), the capture aborts and reports the failing step.
 - **No truncation fields exist in the wire DTO.** `ZhihuComment` has no truncation flag
   fields. Truncation is reported in the panel/`selectComments` metadata and enforced by
   the client caps; the server re-applies its own caps defensively.
@@ -242,12 +258,21 @@ adaptation of unknown shapes.
 ### Comments show 0 while Zhihu shows many
 
 Some accounts receive `200` from `comment_v5/<resource>/<id>/root_comment` with
-`paging.totals: 123` and `data: []`. Client **1.0.5** detects this (empty `data` plus a
+`paging.totals: 123` and `data: []`. Client **1.0.5+** detects this (empty `data` plus a
 non-zero `comment_count`), retries the legacy `/api/v4/<resource>/<id>/comments` list, and
 shows `COMMENTS_UNAVAILABLE` if both channels are empty. If an older snapshot was already
 created with 0 comments, use **Delete** in the **Zhihu archives** console list (or delete
 the `SinglePage` from **Pages** → **Recycle Bin** and permanently remove it there) and
 capture again — Halo does not replace the content of an existing snapshot.
+
+### Comment APIs unreachable (NETWORK_ERROR at `comments:...`)
+
+The body was captured, but Zhihu's comment endpoints were blocked at the network layer
+(CORS, a redirect to a login/WAF page, or an offline connection). The script retries the
+failing URL once through `GM_xmlhttpRequest`; if that also fails it submits the snapshot
+with an empty comment list and lists the failing channel under **Warnings**
+(`comment_v5: NETWORK_ERROR`, `legacy v4: NETWORK_ERROR`). Delete and re-capture later if
+you need the comments. Risk control (`40362`) still aborts.
 
 ### Login wall / 40353
 
@@ -261,8 +286,11 @@ does not retry automatically and does not loop over requests.
 
 ### Missing signature / 10003
 
-See the article-signature limitation above. Reload the article tab and retry from the
-page's own context; the script reports the failing step (`article:api`).
+`/api/v4/articles/<id>` is signature-gated. Version 1.0.6+ no longer depends on it: it reads
+the SSR entity from `script#js-initialData`, then `/api/articles/<id>`, then the rendered
+DOM. A successful fallback appears under **Warnings** in the panel. If the error is still
+shown, all three sources were empty — reload the article tab while signed in, confirm the
+body is visible, and retry. The reported step is `article:api`.
 
 ### Oversized payload
 
@@ -295,7 +323,7 @@ profile. They were **not** executed in this environment.
 1. Create a fresh browser profile and install only Tampermonkey.
 2. In Halo, create a dedicated PAT with only `system:zhihu-archives:manage`; copy it once.
 3. Install `zhihu-archive.user.js`. Confirm the Tampermonkey menu shows
-   **Halo Zhihu Archive 1.0.5**.
+   **Halo Zhihu Archive 1.0.7**.
 4. Open an article (`/p/`), answer (`/question/.../answer/...`), pin (`/pin/`), and video
    (`/zvideo/`) while signed in. For each, confirm the panel detects the correct type and
    enables **Capture & send**.
