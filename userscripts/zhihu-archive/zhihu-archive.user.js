@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Halo Zhihu Archive
 // @namespace    https://github.com/halo-dev/halo
-// @version      1.0.5
+// @version      1.0.7
 // @description  Capture a Zhihu article, answer, pin, or video in your logged-in browser and submit a versioned archive payload to Halo.
 // @author       Halo
 // @match        https://zhuanlan.zhihu.com/p/*
@@ -19,7 +19,7 @@
 (function () {
   'use strict';
 
-  var SCRIPT_VERSION = '1.0.5';
+  var SCRIPT_VERSION = '1.0.7';
   var SCHEMA_VERSION = 1;
   var SETTINGS_PREFIX = 'haloZhihuArchive';
   var PANEL_ID = 'halo-zhihu-archive-panel';
@@ -178,7 +178,7 @@
         message:
           'Network request failed (' +
           step +
-          '). Check your connection and that the Halo base URL is reachable. No data was submitted.' +
+          '). Check your connection and that the requested host is reachable. No data was submitted.' +
           (input.url ? ' Request: ' + (input.method || 'POST') + ' ' + input.url : ''),
         detail: { step: step, status: status, cause: input.networkError || null, url: input.url || null }
       };
@@ -374,11 +374,13 @@
 
     var canonical = new URL(parsed.href);
     canonical.hash = '';
-    var apiPaths = {
-      ARTICLE: '/api/v4/articles/',
-      ANSWER: '/api/v4/answers/',
-      PIN: '/api/v4/pins/',
-      VIDEO: '/api/v4/zvideos/'
+    // `www.zhihu.com/api/v4/articles/<id>` always answers 403 code 10003 (it requires an
+    // `x-zse-96` signature). The column host serves the same article entity without one.
+    var apiBases = {
+      ARTICLE: 'https://zhuanlan.zhihu.com/api/articles/',
+      ANSWER: 'https://www.zhihu.com/api/v4/answers/',
+      PIN: 'https://www.zhihu.com/api/v4/pins/',
+      VIDEO: 'https://www.zhihu.com/api/v4/zvideos/'
     };
     var apiIncludes = {
       ANSWER: '?include=content,excerpt,created_time,updated_time,voteup_count,comment_count,author,question'
@@ -388,10 +390,253 @@
       type: type,
       id: id,
       url: canonical.href,
-      apiUrl: 'https://www.zhihu.com' + apiPaths[type] + id + (apiIncludes[type] || ''),
+      apiUrl: apiBases[type] + id + (apiIncludes[type] || ''),
       commentResource: COMMENT_RESOURCE[type],
       reason: null
     };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Article source data (page state, DOM fallback)
+  // ---------------------------------------------------------------------------
+
+  function parseJsonText(text) {
+    try {
+      return JSON.parse(String(text));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function pickArticleEntity(bucket, id) {
+    if (!bucket || typeof bucket !== 'object') {
+      return null;
+    }
+    if (id != null && bucket[id]) {
+      return bucket[id];
+    }
+    var keys = Object.keys(bucket);
+    for (var i = 0; i < keys.length; i++) {
+      if (id != null && String(keys[i]) === String(id)) {
+        return bucket[keys[i]];
+      }
+    }
+    for (var j = 0; j < keys.length; j++) {
+      var candidate = bucket[keys[j]];
+      if (candidate && typeof candidate === 'object' && (candidate.title || candidate.content)) {
+        return candidate;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Maps a Zhihu article entity from either wire shape (snake_case API, camelCase page
+   * state) onto the shape `buildPayload` reads, so every source produces one payload.
+   */
+  function normalizeArticleSource(raw) {
+    if (!raw || typeof raw !== 'object') {
+      return null;
+    }
+    var author = raw.author;
+    if (author && typeof author === 'object' && author.member && typeof author.member === 'object') {
+      author = author.member;
+    }
+    if (author && typeof author === 'object') {
+      author = {
+        name: author.name || author.nickname || author.display_name || null,
+        url: author.url || author.profile_url || author.profileUrl || null,
+        url_token: author.url_token || author.urlToken || null
+      };
+    } else {
+      author = null;
+    }
+    var content = raw.content;
+    if (typeof content !== 'string' || !content.trim()) {
+      content = raw.content_html || raw.contentHtml || raw.rich_text || raw.richText || '';
+    }
+    return {
+      id: raw.id != null ? raw.id : null,
+      title: raw.title || null,
+      content: content,
+      excerpt: raw.excerpt || null,
+      author: author,
+      created:
+        raw.created != null ? raw.created : raw.created_time != null ? raw.created_time : raw.createdTime,
+      updated:
+        raw.updated != null ? raw.updated : raw.updated_time != null ? raw.updated_time : raw.updatedTime,
+      voteup_count:
+        raw.voteup_count != null
+          ? raw.voteup_count
+          : raw.voteupCount != null
+            ? raw.voteupCount
+            : raw.like_count != null
+              ? raw.like_count
+              : raw.likeCount,
+      comment_count: raw.comment_count != null ? raw.comment_count : raw.commentCount
+    };
+  }
+
+  function articleFromInitialDataJson(text, id) {
+    var state = parseJsonText(text);
+    if (!state || typeof state !== 'object') {
+      return null;
+    }
+    var root = state.initialState || state;
+    var buckets = [
+      root && root.entities && root.entities.articles,
+      root && root.articles,
+      state && state.entities && state.entities.articles
+    ];
+    for (var i = 0; i < buckets.length; i++) {
+      var normalized = normalizeArticleSource(pickArticleEntity(buckets[i], id));
+      if (normalized && normalized.content && normalized.title) {
+        return normalized;
+      }
+    }
+    return null;
+  }
+
+  function readInitialDataText(doc) {
+    doc = doc || (typeof document !== 'undefined' ? document : null);
+    if (!doc || typeof doc.querySelector !== 'function') {
+      return null;
+    }
+    var script = doc.querySelector('script#js-initialData') || doc.getElementById('js-initialData');
+    return script && typeof script.textContent === 'string' ? script.textContent : null;
+  }
+
+  function articleFromPageState(id) {
+    return articleFromInitialDataJson(readInitialDataText(), id);
+  }
+
+  function firstElement(doc, selectors) {
+    for (var i = 0; i < selectors.length; i++) {
+      var node = doc.querySelector(selectors[i]);
+      if (node) {
+        return node;
+      }
+    }
+    return null;
+  }
+
+  function nodeText(node) {
+    return node && typeof node.textContent === 'string' ? node.textContent.replace(/\s+/g, ' ').trim() : '';
+  }
+
+  function parseZhihuDateText(text) {
+    var dateMatch = /(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})/.exec(text || '');
+    if (!dateMatch) {
+      return null;
+    }
+    var timeMatch = /(\d{1,2}):(\d{2})/.exec(text || '');
+    var date = new Date(
+      Number(dateMatch[1]),
+      Number(dateMatch[2]) - 1,
+      Number(dateMatch[3]),
+      timeMatch ? Number(timeMatch[1]) : 0,
+      timeMatch ? Number(timeMatch[2]) : 0,
+      0,
+      0
+    );
+    return isNaN(date.getTime()) ? null : Math.floor(date.getTime() / 1000);
+  }
+
+  function parseCountText(text) {
+    var wan = /([0-9]+(?:\.[0-9]+)?)\s*万/.exec(text || '');
+    if (wan) {
+      return Math.round(Number(wan[1]) * 10000);
+    }
+    var plain = /([0-9][0-9,]*)/.exec(text || '');
+    if (!plain) {
+      return null;
+    }
+    var count = Number(plain[1].replace(/,/g, ''));
+    return isFinite(count) ? count : null;
+  }
+
+  function absoluteZhihuUrl(href) {
+    if (!href) {
+      return null;
+    }
+    var url = String(href).trim();
+    if (url.indexOf('//') === 0) {
+      return 'https:' + url;
+    }
+    if (url.charAt(0) === '/') {
+      return 'https://www.zhihu.com' + url;
+    }
+    return url;
+  }
+
+  /**
+   * Last-resort reader for a rendered article page: the visible title, body, author,
+   * timestamp, and counts. Used only when both the page state and the article API are
+   * unavailable, so a signature-gated API cannot block an otherwise readable article.
+   */
+  function articleFromDom(doc) {
+    doc = doc || (typeof document !== 'undefined' ? document : null);
+    if (!doc || typeof doc.querySelector !== 'function') {
+      return null;
+    }
+    var content = firstElement(doc, [
+      '.Post-RichTextContainer .RichText.ztext',
+      '.Post-RichTextContainer .RichText',
+      '.RichText.ztext.Post-RichText',
+      '.Post-RichText',
+      'article .RichText',
+      '.RichText.ztext'
+    ]);
+    if (!content || !content.innerHTML) {
+      return null;
+    }
+    var titleNode = firstElement(doc, [
+      'article h1.Post-Title',
+      '.Post-Header h1.Post-Title',
+      'h1.Post-Title',
+      'article h1',
+      'h1'
+    ]);
+    var authorLink = firstElement(doc, [
+      '.Post-Author a',
+      '.AuthorInfo-name a.UserLink-link',
+      '.AuthorInfo-name a',
+      'a.UserLink-link'
+    ]);
+    var authorNode = authorLink || firstElement(doc, ['.AuthorInfo-name']);
+    var timeNode = firstElement(doc, [
+      '.ContentItem-time',
+      '.Post-Header .ContentItem-time',
+      '.Post-time',
+      '.Post-meta time'
+    ]);
+    var voteNode = firstElement(doc, ['.VoteButton--up', 'button[class*="VoteButton"]', '[class*="VoteButton"]']);
+    var commentNode = firstElement(doc, [
+      '#comments h4',
+      '.Comments-container h4',
+      '[data-za-detail-view-path-module="CommentList"] h4'
+    ]);
+    var title = nodeText(titleNode).replace(/\s*-\s*知乎\s*$/, '');
+    if (!title) {
+      title = String(doc.title || '').replace(/\s*-\s*知乎\s*$/, '').trim();
+    }
+    return normalizeArticleSource({
+      title: title,
+      content: content.innerHTML,
+      author: authorNode
+        ? {
+            name: nodeText(authorNode),
+            url: authorLink ? absoluteZhihuUrl(authorLink.getAttribute('href')) : null
+          }
+        : null,
+      created: parseZhihuDateText(nodeText(timeNode)),
+      voteup_count: parseCountText(nodeText(voteNode)),
+      comment_count: parseCountText(nodeText(commentNode))
+    });
+  }
+
+  function hasArticleBody(data) {
+    return Boolean(data && typeof data.content === 'string' && data.content.trim());
   }
 
   // ---------------------------------------------------------------------------
@@ -1511,6 +1756,39 @@
     throw new UserscriptError('FETCH_UNAVAILABLE', 'This browser does not expose fetch().', { step: 'capture' });
   }
 
+  function gmFetch(url) {
+    return new Promise(function (resolve, reject) {
+      if (typeof GM_xmlhttpRequest !== 'function') {
+        reject(new Error('GM_xmlhttpRequest is unavailable.'));
+        return;
+      }
+      GM_xmlhttpRequest({
+        method: 'GET',
+        url: url,
+        headers: { Accept: 'application/json' },
+        timeout: 20000,
+        onload: function (response) {
+          resolve({
+            ok: response.status >= 200 && response.status < 300,
+            status: response.status,
+            text: function () {
+              return Promise.resolve(String(response.responseText == null ? '' : response.responseText));
+            }
+          });
+        },
+        onerror: function () {
+          reject(new Error('GM request failed.'));
+        },
+        ontimeout: function () {
+          reject(new Error('GM request timed out.'));
+        },
+        onabort: function () {
+          reject(new Error('GM request was aborted.'));
+        }
+      });
+    });
+  }
+
   function safeZhihuNext(next) {
     if (!next) {
       return null;
@@ -1567,7 +1845,7 @@
     if (!error) {
       return true;
     }
-    return error.code !== 'NETWORK_ERROR' && error.code !== 'ZHIHU_RISK_CONTROL';
+    return error.code !== 'ZHIHU_RISK_CONTROL';
   }
 
   async function fetchZhihuJsonFromAny(urls, step, onProgress) {
@@ -1598,8 +1876,26 @@
         credentials: 'include',
         headers: { Accept: 'application/json' }
       });
-    } catch (e) {
-      throw toError(mapError({ context: 'capture', step: step, networkError: e && e.message }));
+    } catch (pageError) {
+      var transportError = pageError;
+      if (typeof GM_xmlhttpRequest === 'function') {
+        try {
+          response = await gmFetch(url);
+        } catch (gmError) {
+          transportError = gmError;
+        }
+      }
+      if (!response) {
+        throw toError(
+          mapError({
+            context: 'capture',
+            method: 'GET',
+            step: step,
+            url: url,
+            networkError: transportError && transportError.message
+          })
+        );
+      }
     }
     var text = await response.text();
     var parsed = parseBody(text);
@@ -1682,6 +1978,17 @@
     return pages;
   }
 
+  function commentFailureSummary(unavailable) {
+    var parts = [];
+    if (unavailable && unavailable.v5) {
+      parts.push('comment_v5: ' + (unavailable.v5.code || 'ERROR'));
+    }
+    if (unavailable && unavailable.legacy) {
+      parts.push('legacy v4: ' + (unavailable.legacy.code || 'ERROR'));
+    }
+    return parts.join('; ') || 'unknown error';
+  }
+
   async function captureRootPages(page, sourceData, onProgress) {
     if (!page.commentResource) {
       return { pages: [], legacy: false };
@@ -1716,19 +2023,14 @@
     if (countCommentEntries(legacyPages) > 0) {
       return { pages: legacyPages, legacy: true };
     }
-    var details = [];
-    if (v5Error) {
-      details.push('comment_v5 failed: ' + v5Error.message);
-    }
-    if (legacyError) {
-      details.push('legacy v4 failed: ' + legacyError.message);
+    if (v5Error || legacyError) {
+      return { pages: [], legacy: false, unavailable: { v5: v5Error, legacy: legacyError } };
     }
     throw new UserscriptError(
       'COMMENTS_UNAVAILABLE',
       'Zhihu reports ' +
         expected +
-        ' comments, but neither comment_v5 nor the legacy v4 API returned root comments. Nothing was submitted.' +
-        (details.length ? ' ' + details.join(' ') : ''),
+        ' comments, but neither comment_v5 nor the legacy v4 API returned root comments. Nothing was submitted.',
       { step: 'comments:roots', expectedTotal: expected }
     );
   }
@@ -1835,21 +2137,64 @@
     return [];
   }
 
+  async function loadSourceData(page, onProgress, warnings) {
+    if (page.type !== 'ARTICLE') {
+      return await fetchZhihuJson(page.apiUrl, page.type.toLowerCase() + ':api', onProgress);
+    }
+    var embedded = articleFromPageState(page.id);
+    if (hasArticleBody(embedded)) {
+      return embedded;
+    }
+    var apiError = null;
+    try {
+      var fromApi = normalizeArticleSource(await fetchZhihuJson(page.apiUrl, 'article:api', onProgress));
+      if (hasArticleBody(fromApi)) {
+        return fromApi;
+      }
+      apiError = new UserscriptError(
+        'UNEXPECTED_SHAPE',
+        'Zhihu article API response did not include the article body.',
+        { step: 'article:api' }
+      );
+    } catch (error) {
+      apiError = error;
+    }
+    var fromDom = articleFromDom();
+    if (hasArticleBody(fromDom)) {
+      warnings.push(
+        'Zhihu article API was unavailable (' +
+          (apiError.code || 'ERROR') +
+          '); captured the article from the page DOM.'
+      );
+      return fromDom;
+    }
+    throw apiError;
+  }
+
   async function capture(page, settings, onProgress) {
     onProgress('source');
-    var sourceData = await fetchZhihuJson(page.apiUrl, page.type.toLowerCase() + ':api', onProgress);
     var warnings = [];
+    var sourceData = await loadSourceData(page, onProgress, warnings);
     var rootResult = { pages: [], legacy: false };
     if (page.commentResource) {
       rootResult = await captureRootPages(page, sourceData, onProgress);
       if (rootResult.legacy) {
         warnings.push('The comment_v5 root API returned no data; the legacy v4 comment API was used.');
       }
+      if (rootResult.unavailable) {
+        warnings.push(
+          'Zhihu comment APIs were unreachable (' +
+            commentFailureSummary(rootResult.unavailable) +
+            '); the snapshot was submitted with an empty comment list.'
+        );
+      }
     }
+    var reportedTotal = sourceData.comment_count != null ? toCount(sourceData.comment_count) : undefined;
+    var commentTotal = rootResult.unavailable ? 0 : reportedTotal;
     var preliminary = selectComments({
       rootPages: rootResult.pages,
       repliesByRoot: {},
-      total: sourceData.comment_count
+      total: commentTotal
     });
     var repliesByRoot = {};
     for (var i = 0; i < preliminary.comments.roots.length; i++) {
@@ -1859,8 +2204,11 @@
     var selected = selectComments({
       rootPages: rootResult.pages,
       repliesByRoot: repliesByRoot,
-      total: sourceData.comment_count
+      total: commentTotal
     });
+    if (sourceData.comment_count == null && selected.comments.total != null) {
+      sourceData.comment_count = selected.comments.total;
+    }
     selected.meta.warnings.forEach(function (warning) {
       warnings.push(warning);
     });
@@ -2176,7 +2524,12 @@
     legacyRootCommentUrls: legacyRootCommentUrls,
     legacyChildCommentUrls: legacyChildCommentUrls,
     countCommentEntries: countCommentEntries,
-    shouldUseLegacyComments: shouldUseLegacyComments
+    shouldUseLegacyComments: shouldUseLegacyComments,
+    articleFromInitialDataJson: articleFromInitialDataJson,
+    normalizeArticleSource: normalizeArticleSource,
+    articleFromDom: articleFromDom,
+    loadSourceData: loadSourceData,
+    captureRootPages: captureRootPages
   };
 
   var isNode = typeof process !== 'undefined' && process.versions && process.versions.node;

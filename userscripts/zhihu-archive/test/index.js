@@ -4,6 +4,9 @@
 // releases, so this entry point registers every suite in the directory.
 require('./detect.test.js');
 require('./extract.test.js');
+require('./article-state.test.js');
+require('./article-source.test.js');
+require('./comment-fallback.test.js');
 require('./comments.test.js');
 require('./payload.test.js');
 require('./submit.test.js');

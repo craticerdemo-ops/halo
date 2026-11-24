@@ -1,0 +1,22 @@
+{
+    "initialState": {
+        "entities": {
+            "articles": {
+                "1010101": {
+                    "author": {
+                        "name": "Embedded Author",
+                        "urlToken": "embedded-author"
+                    },
+                    "commentCount": 9,
+                    "content": "<p>Embedded body with <strong>emphasis</strong>.</p><p><img data-original=\"https://pic1.zhimg.com/embedded-article.jpg\" src=\"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7\"></p>",
+                    "created": 1609459200,
+                    "excerpt": "Embedded excerpt",
+                    "id": 1010101,
+                    "title": "Embedded article title",
+                    "updated": 1609545600,
+                    "voteupCount": 77
+                }
+            }
+        }
+    }
+}

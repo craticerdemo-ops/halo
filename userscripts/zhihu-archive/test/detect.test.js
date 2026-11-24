@@ -10,7 +10,7 @@ test('detects an article and maps its API and comment endpoints', () => {
   assert.equal(page.type, 'ARTICLE');
   assert.equal(page.id, '1010101');
   assert.equal(page.url, 'https://zhuanlan.zhihu.com/p/1010101');
-  assert.equal(page.apiUrl, 'https://www.zhihu.com/api/v4/articles/1010101');
+  assert.equal(page.apiUrl, 'https://zhuanlan.zhihu.com/api/articles/1010101');
   assert.equal(page.commentResource, 'articles');
   assert.equal(page.reason, null);
 });
