@@ -96,4 +96,5 @@ export * from './api/user-preference-v1alpha1-uc-api';
 export * from './api/user-v1alpha1-api';
 export * from './api/user-v1alpha1-console-api';
 export * from './api/user-v1alpha1-uc-api';
+export * from './api/zhihu-archive-v1alpha1-console-api';
 

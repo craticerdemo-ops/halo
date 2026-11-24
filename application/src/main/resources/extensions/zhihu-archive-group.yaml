@@ -1,0 +1,10 @@
+apiVersion: storage.halo.run/v1alpha1
+kind: Group
+metadata:
+  name: zhihu-archive
+  labels:
+    halo.run/hidden: "true"
+  finalizers:
+    - system-protection
+spec:
+  displayName: 知乎存档

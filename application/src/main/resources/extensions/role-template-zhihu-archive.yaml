@@ -1,0 +1,32 @@
+apiVersion: v1alpha1
+kind: "Role"
+metadata:
+  name: role-template-manage-zhihu-archives
+  labels:
+    halo.run/role-template: "true"
+  annotations:
+    rbac.authorization.halo.run/dependencies: '[ "role-template-view-zhihu-archives" ]'
+    rbac.authorization.halo.run/module: "Zhihu Archives"
+    rbac.authorization.halo.run/display-name: "Zhihu Archive Manage"
+    rbac.authorization.halo.run/ui-permissions: |
+      ["system:zhihu-archives:manage"]
+rules:
+  - apiGroups: ["api.console.halo.run"]
+    resources: ["zhihu-archives", "zhihu-archives/transfer-video", "zhihu-archives/rebuild"]
+    verbs: ["*"]
+---
+apiVersion: v1alpha1
+kind: "Role"
+metadata:
+  name: role-template-view-zhihu-archives
+  labels:
+    halo.run/role-template: "true"
+  annotations:
+    rbac.authorization.halo.run/module: "Zhihu Archives"
+    rbac.authorization.halo.run/display-name: "Zhihu Archive View"
+    rbac.authorization.halo.run/ui-permissions: |
+      ["system:zhihu-archives:view"]
+rules:
+  - apiGroups: ["api.console.halo.run"]
+    resources: ["zhihu-archives", "zhihu-archives/transfer-video", "zhihu-archives/rebuild"]
+    verbs: ["get", "list"]

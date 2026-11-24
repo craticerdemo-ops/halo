@@ -77,6 +77,7 @@ import {
   UserV1alpha1Api,
   UserV1alpha1ConsoleApi,
   UserV1alpha1UcApi,
+  ZhihuArchiveV1alpha1ConsoleApi,
 } from "../src";
 
 const defaultAxiosInstance = axios.create({
@@ -289,6 +290,11 @@ function createConsoleApiClient(axiosInstance: AxiosInstance) {
       axiosInstance
     ),
     uiPlugin: new UiPluginV1alpha1ConsoleApi(undefined, baseURL, axiosInstance),
+    zhihuArchive: new ZhihuArchiveV1alpha1ConsoleApi(
+      undefined,
+      baseURL,
+      axiosInstance
+    ),
     storage: {
       attachment: new AttachmentV1alpha1ConsoleApi(
         undefined,

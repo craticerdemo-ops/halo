@@ -84,6 +84,7 @@ api/user-preference-v1alpha1-uc-api.ts
 api/user-v1alpha1-api.ts
 api/user-v1alpha1-console-api.ts
 api/user-v1alpha1-uc-api.ts
+api/zhihu-archive-v1alpha1-console-api.ts
 base.ts
 common.ts
 configuration.ts
@@ -345,3 +346,13 @@ models/user-status.ts
 models/user.ts
 models/verify-code-request.ts
 models/vote-request.ts
+models/zhihu-archive-create-request.ts
+models/zhihu-archive-payload.ts
+models/zhihu-article.ts
+models/zhihu-asset.ts
+models/zhihu-assets.ts
+models/zhihu-author.ts
+models/zhihu-capture.ts
+models/zhihu-comment.ts
+models/zhihu-comments.ts
+models/zhihu-source.ts

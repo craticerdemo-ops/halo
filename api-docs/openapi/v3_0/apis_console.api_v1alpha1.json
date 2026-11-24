@@ -3392,6 +3392,154 @@
         ]
       }
     },
+    "/apis/api.console.halo.run/v1alpha1/zhihu-archives": {
+      "get": {
+        "description": "List Zhihu archive snapshots, newest first, with in-memory pagination.",
+        "operationId": "ListZhihuArchives",
+        "parameters": [
+          {
+            "description": "Page number, starting from 1.",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Page size, between 1 and 100.",
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SinglePageList"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "ZhihuArchiveV1alpha1Console"
+        ]
+      },
+      "post": {
+        "description": "Create a Zhihu archive snapshot from a captured payload. Idempotent for an unchanged payload of the same source.",
+        "operationId": "CreateZhihuArchive",
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ZhihuArchiveCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SinglePage"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "ZhihuArchiveV1alpha1Console"
+        ]
+      }
+    },
+    "/apis/api.console.halo.run/v1alpha1/zhihu-archives/index/rebuild": {
+      "post": {
+        "description": "Regenerate the archive index page listing all snapshots newest first.",
+        "operationId": "RebuildZhihuArchiveIndex",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SinglePage"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "ZhihuArchiveV1alpha1Console"
+        ]
+      }
+    },
+    "/apis/api.console.halo.run/v1alpha1/zhihu-archives/{name}": {
+      "delete": {
+        "description": "Permanently delete a Zhihu archive snapshot and its versions, then rebuild the archive index. Only pages created by the Zhihu archive feature can be deleted through this endpoint.",
+        "operationId": "DeleteZhihuArchive",
+        "parameters": [
+          {
+            "description": "metadata.name of the Zhihu archive snapshot.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Archive deleted"
+          }
+        },
+        "tags": [
+          "ZhihuArchiveV1alpha1Console"
+        ]
+      }
+    },
+    "/apis/api.console.halo.run/v1alpha1/zhihu-archives/{name}/transfer-video": {
+      "post": {
+        "description": "Transfer the source video of a snapshot into attachment storage. Repeated calls return the existing local reference.",
+        "operationId": "TransferZhihuArchiveVideo",
+        "parameters": [
+          {
+            "description": "metadata.name of the Zhihu archive snapshot.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SinglePage"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "ZhihuArchiveV1alpha1Console"
+        ]
+      }
+    },
     "/apis/console.api.halo.run/v1alpha1/systemconfigs/{group}": {
       "get": {
         "description": "Get system config by group",
@@ -6839,6 +6987,65 @@
         },
         "description": "Single page extension that stores standalone page metadata, publication settings, and derived status."
       },
+      "SinglePageList": {
+        "required": [
+          "first",
+          "hasNext",
+          "hasPrevious",
+          "items",
+          "last",
+          "page",
+          "size",
+          "total",
+          "totalPages"
+        ],
+        "type": "object",
+        "properties": {
+          "first": {
+            "type": "boolean",
+            "description": "Indicates whether current page is the first page."
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "Indicates whether current page has next page."
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "Indicates whether current page has previous page."
+          },
+          "items": {
+            "type": "array",
+            "description": "A chunk of items.",
+            "items": {
+              "$ref": "#/components/schemas/SinglePage"
+            }
+          },
+          "last": {
+            "type": "boolean",
+            "description": "Indicates whether current page is the last page."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number, starts from 1. If not set or equal to 0, it means no pagination.",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "description": "Size of each page. If not set or equal to 0, it means no pagination.",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "description": "Total elements.",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "Indicates total pages.",
+            "format": "int64"
+          }
+        }
+      },
       "SinglePageRequest": {
         "required": [
           "content",
@@ -7789,6 +7996,315 @@
           }
         },
         "description": "Payload for verifying an email address by code."
+      },
+      "ZhihuArchiveCreateRequest": {
+        "required": [
+          "payload",
+          "policyName"
+        ],
+        "type": "object",
+        "properties": {
+          "payload": {
+            "$ref": "#/components/schemas/ZhihuArchivePayload"
+          },
+          "policyName": {
+            "maxLength": 253,
+            "minLength": 0,
+            "type": "string",
+            "description": "storage policy used for the raw payload and localized media"
+          },
+          "visible": {
+            "pattern": "PUBLIC|PRIVATE",
+            "type": "string",
+            "description": "page visibility of the created snapshot, \u003ccode\u003ePUBLIC\u003c/code\u003e by default; only \u003ccode\u003ePUBLIC\u003c/code\u003e and\n     \u003ccode\u003ePRIVATE\u003c/code\u003e are accepted"
+          }
+        },
+        "description": "Request envelope for creating a Zhihu archive snapshot."
+      },
+      "ZhihuArchivePayload": {
+        "required": [
+          "article",
+          "capture",
+          "comments",
+          "schemaVersion",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "article": {
+            "$ref": "#/components/schemas/ZhihuArticle"
+          },
+          "assets": {
+            "$ref": "#/components/schemas/ZhihuAssets"
+          },
+          "capture": {
+            "$ref": "#/components/schemas/ZhihuCapture"
+          },
+          "comments": {
+            "$ref": "#/components/schemas/ZhihuComments"
+          },
+          "schemaVersion": {
+            "maximum": 1,
+            "minimum": 1,
+            "type": "integer",
+            "description": "payload schema version, currently exactly 1",
+            "format": "int32"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ZhihuSource"
+          }
+        },
+        "description": "Versioned, self-describing archive payload submitted by a capture client."
+      },
+      "ZhihuArticle": {
+        "required": [
+          "author",
+          "html",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/ZhihuAuthor"
+          },
+          "commentCount": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "number of comments at capture time",
+            "format": "int64"
+          },
+          "html": {
+            "maxLength": 2000000,
+            "minLength": 0,
+            "type": "string",
+            "description": "article HTML to be sanitized by the server"
+          },
+          "likeCount": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "number of likes at capture time",
+            "format": "int64"
+          },
+          "publishedAt": {
+            "type": "string",
+            "description": "original publish time",
+            "format": "date-time"
+          },
+          "title": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string",
+            "description": "article title"
+          }
+        },
+        "description": "Captured article body and frozen metrics for a Zhihu source."
+      },
+      "ZhihuAsset": {
+        "required": [
+          "type",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "asset type",
+            "enum": [
+              "IMAGE",
+              "AVATAR",
+              "EQUATION",
+              "POSTER",
+              "VIDEO"
+            ]
+          },
+          "url": {
+            "maxLength": 2048,
+            "minLength": 0,
+            "type": "string",
+            "description": "asset URL"
+          }
+        },
+        "description": "A remote asset referenced by an archive payload."
+      },
+      "ZhihuAssets": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 1000,
+            "minItems": 0,
+            "type": "array",
+            "description": "assets, may be \u003ccode\u003enull\u003c/code\u003e",
+            "items": {
+              "$ref": "#/components/schemas/ZhihuAsset"
+            }
+          }
+        },
+        "description": "Collection of assets referenced by an archive payload."
+      },
+      "ZhihuAuthor": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string",
+            "description": "display name of the author"
+          },
+          "profileUrl": {
+            "maxLength": 2048,
+            "minLength": 0,
+            "type": "string",
+            "description": "optional Zhihu profile URL"
+          }
+        },
+        "description": "Author identity captured from a Zhihu source."
+      },
+      "ZhihuCapture": {
+        "required": [
+          "capturedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "capturedAt": {
+            "type": "string",
+            "description": "time the capture was performed",
+            "format": "date-time"
+          },
+          "clientVersion": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string",
+            "description": "version of the capture client"
+          }
+        },
+        "description": "Capture metadata recorded by the client."
+      },
+      "ZhihuComment": {
+        "required": [
+          "author",
+          "contentHtml"
+        ],
+        "type": "object",
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/ZhihuAuthor"
+          },
+          "badge": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string",
+            "description": "badge label shown by Zhihu"
+          },
+          "collapsed": {
+            "type": "boolean",
+            "description": "whether Zhihu collapsed the comment"
+          },
+          "contentHtml": {
+            "maxLength": 20000,
+            "minLength": 0,
+            "type": "string",
+            "description": "sanitized comment HTML"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "creation time reported by Zhihu",
+            "format": "date-time"
+          },
+          "id": {
+            "maxLength": 128,
+            "minLength": 0,
+            "type": "string",
+            "description": "Zhihu-side comment identifier"
+          },
+          "ipLocation": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string",
+            "description": "IP location label shown by Zhihu"
+          },
+          "likeCount": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "number of likes",
+            "format": "int64"
+          },
+          "replies": {
+            "maxItems": 500,
+            "minItems": 0,
+            "type": "array",
+            "description": "nested replies",
+            "items": {
+              "$ref": "#/components/schemas/ZhihuComment"
+            }
+          },
+          "replyToAuthor": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string",
+            "description": "author this comment replies to, when known"
+          }
+        },
+        "description": "A captured Zhihu comment, which may contain nested replies."
+      },
+      "ZhihuComments": {
+        "required": [
+          "roots"
+        ],
+        "type": "object",
+        "properties": {
+          "roots": {
+            "maxItems": 200,
+            "minItems": 0,
+            "type": "array",
+            "description": "root comments selected for the archive",
+            "items": {
+              "$ref": "#/components/schemas/ZhihuComment"
+            }
+          },
+          "total": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "total number of comments reported by Zhihu",
+            "format": "int64"
+          }
+        },
+        "description": "Captured comment tree for a Zhihu source."
+      },
+      "ZhihuSource": {
+        "required": [
+          "id",
+          "type",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "maxLength": 128,
+            "minLength": 0,
+            "type": "string",
+            "description": "Zhihu-side identifier of the source"
+          },
+          "type": {
+            "type": "string",
+            "description": "source content type",
+            "enum": [
+              "ARTICLE",
+              "ANSWER",
+              "PIN",
+              "VIDEO"
+            ]
+          },
+          "url": {
+            "maxLength": 2048,
+            "minLength": 0,
+            "type": "string",
+            "description": "source URL, stored verbatim"
+          }
+        },
+        "description": "Identity of the captured Zhihu source."
       }
     },
     "securitySchemes": {
