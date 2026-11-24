@@ -1,0 +1,14 @@
+{
+    "author": {
+        "name": "Fixture Author",
+        "url_token": "fixture-author"
+    },
+    "comment_count": 31,
+    "content": "<p>Intro paragraph with <strong>bold</strong> text.</p><script>window.evil = true;</script><style>.evil{color:red}</style><p><img src=\"https://pic1.zhimg.com/fixture-article.jpg\" onerror=\"window.evil=true\"></p><p>Another paragraph &amp; more.</p>",
+    "created": 1609459200,
+    "excerpt": "Fixture excerpt",
+    "id": 1010101,
+    "title": "Fixture article title",
+    "updated": 1609545600,
+    "voteup_count": 4242
+}

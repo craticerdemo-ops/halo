@@ -1,0 +1,45 @@
+{
+    "data": [
+        {
+            "author": {
+                "name": "Commenter 9100",
+                "url_token": "commenter-9100"
+            },
+            "collapsed": true,
+            "comment_tag": [
+                {
+                    "text": "Fixture badge 1",
+                    "type": "badge"
+                }
+            ],
+            "content": "<p>Fixture root comment 9100 with <code>code</code>.</p>",
+            "created_time": 1641004300,
+            "id": 9100,
+            "ip_location": "IP 属地：Fixtureland",
+            "like_count": 1000
+        },
+        {
+            "author": {
+                "name": "Commenter 9101",
+                "url_token": "commenter-9101"
+            },
+            "collapsed": false,
+            "comment_tag": [
+                {
+                    "text": "Fixture badge 2",
+                    "type": "badge"
+                }
+            ],
+            "content": "<p>Fixture root comment 9101 with <code>code</code>.</p>",
+            "created_time": 1641004301,
+            "id": 9101,
+            "ip_location": "IP 属地：Fixtureland",
+            "like_count": 3
+        }
+    ],
+    "paging": {
+        "is_end": true,
+        "next": null,
+        "totals": 30
+    }
+}

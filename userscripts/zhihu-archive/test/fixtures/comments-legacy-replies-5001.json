@@ -1,0 +1,62 @@
+{
+  "paging": {
+    "is_end": true,
+    "is_start": true,
+    "totals": 3
+  },
+  "data": [
+    {
+      "id": 6001,
+      "content": "<p>Legacy reply 6001</p>",
+      "vote_count": 3,
+      "created_time": 1700000010,
+      "author": {
+        "member": {
+          "name": "Replier 6001",
+          "url_token": "replier-6001"
+        }
+      },
+      "reply_to_author": {
+        "member": {
+          "name": "Legacy 5001"
+        }
+      },
+      "child_comments": []
+    },
+    {
+      "id": 6002,
+      "content": "<p>Legacy reply 6002</p>",
+      "vote_count": 1,
+      "created_time": 1700000011,
+      "author": {
+        "member": {
+          "name": "Replier 6002"
+        }
+      },
+      "reply_to_author": {
+        "member": {
+          "name": "Replier 6001"
+        }
+      },
+      "child_comments": [
+        {
+          "id": 6003,
+          "content": "<p>Nested legacy reply 6003</p>",
+          "vote_count": 0,
+          "created_time": 1700000012,
+          "author": {
+            "member": {
+              "name": "Replier 6003"
+            }
+          },
+          "reply_to_author": {
+            "member": {
+              "name": "Replier 6002"
+            }
+          },
+          "child_comments": []
+        }
+      ]
+    }
+  ]
+}

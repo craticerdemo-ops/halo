@@ -1,0 +1,18 @@
+{
+    "author": {
+        "name": "Fixture Answerer",
+        "url": "https://www.zhihu.com/people/fixture-answerer"
+    },
+    "comment_count": 12,
+    "content": "<p>Answer body with a <a href=\"https://www.zhihu.com/people/fixture-author\">link</a>.</p><script>alert('no')</script><p><img data-original=\"https://pic2.zhimg.com/fixture-answer.jpg\" src=\"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7\"></p>",
+    "created_time": 1612137600,
+    "excerpt": "Answer excerpt",
+    "id": 2020202,
+    "question": {
+        "id": 3030303,
+        "title": "Fixture question title",
+        "url": "https://www.zhihu.com/question/3030303"
+    },
+    "updated_time": 1612224000,
+    "voteup_count": 515
+}

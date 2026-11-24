@@ -1,0 +1,55 @@
+{
+  "paging": {
+    "is_end": true,
+    "is_start": true,
+    "totals": 3
+  },
+  "data": [
+    {
+      "id": 5001,
+      "content": "<p>Legacy root 5001</p>",
+      "vote_count": 12,
+      "created_time": 1700000001,
+      "collapsed": false,
+      "child_comment_count": 2,
+      "author": {
+        "role": "normal",
+        "member": {
+          "name": "Legacy 5001",
+          "url_token": "legacy-5001"
+        }
+      },
+      "reply_to_author": null,
+      "address_text": "Shanghai"
+    },
+    {
+      "id": 5002,
+      "content": "Plain text legacy root 5002",
+      "vote_count": 5,
+      "created_time": 1700000002,
+      "collapsed": true,
+      "author": {
+        "member": {
+          "name": "Legacy 5002"
+        }
+      },
+      "reply_to_author": {
+        "member": {
+          "name": "Someone Else"
+        }
+      }
+    },
+    {
+      "id": 5003,
+      "content": "<p>Legacy root 5003</p>",
+      "vote_count": 2,
+      "created_time": 1700000003,
+      "author": {
+        "member": {
+          "name": "Legacy 5003"
+        }
+      },
+      "child_comment_count": 0
+    }
+  ]
+}

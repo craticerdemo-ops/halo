@@ -1,0 +1,153 @@
+{
+    "data": [
+        {
+            "author": {
+                "name": "Commenter 9013",
+                "url_token": "commenter-9013"
+            },
+            "collapsed": false,
+            "comment_tag": [
+                {
+                    "text": "Fixture badge 1",
+                    "type": "badge"
+                }
+            ],
+            "content": "<p>Fixture root comment 9013 with <code>code</code>.</p>",
+            "created_time": 1641004213,
+            "id": 9013,
+            "ip_location": "IP 属地：Fixtureland",
+            "like_count": 110
+        },
+        {
+            "author": {
+                "name": "Commenter 9014",
+                "url_token": "commenter-9014"
+            },
+            "collapsed": false,
+            "comment_tag": [
+                {
+                    "text": "Fixture badge 2",
+                    "type": "badge"
+                }
+            ],
+            "content": "<p>Fixture root comment 9014 with <code>code</code>.</p>",
+            "created_time": 1641004214,
+            "id": 9014,
+            "ip_location": "IP 属地：Fixtureland",
+            "like_count": 105
+        },
+        {
+            "author": {
+                "name": "Commenter 9015",
+                "url_token": "commenter-9015"
+            },
+            "collapsed": false,
+            "comment_tag": [
+                {
+                    "text": "Fixture badge 0",
+                    "type": "badge"
+                }
+            ],
+            "content": "<p>Fixture root comment 9015 with <code>code</code>.</p>",
+            "created_time": 1641004215,
+            "id": 9015,
+            "ip_location": "IP 属地：Fixtureland",
+            "like_count": 95
+        },
+        {
+            "author": {
+                "name": "Commenter 9016",
+                "url_token": "commenter-9016"
+            },
+            "collapsed": true,
+            "comment_tag": [
+                {
+                    "text": "Fixture badge 1",
+                    "type": "badge"
+                }
+            ],
+            "content": "<p>Fixture root comment 9016 with <code>code</code>.</p>",
+            "created_time": 1641004216,
+            "id": 9016,
+            "ip_location": "IP 属地：Fixtureland",
+            "like_count": 85
+        },
+        {
+            "author": {
+                "name": "Commenter 9017",
+                "url_token": "commenter-9017"
+            },
+            "collapsed": false,
+            "comment_tag": [
+                {
+                    "text": "Fixture badge 2",
+                    "type": "badge"
+                }
+            ],
+            "content": "<p>Fixture root comment 9017 with <code>code</code>.</p>",
+            "created_time": 1641004217,
+            "id": 9017,
+            "ip_location": "IP 属地：Fixtureland",
+            "like_count": 75
+        },
+        {
+            "author": {
+                "name": "Commenter 9018",
+                "url_token": "commenter-9018"
+            },
+            "collapsed": false,
+            "comment_tag": [
+                {
+                    "text": "Fixture badge 0",
+                    "type": "badge"
+                }
+            ],
+            "content": "<p>Fixture root comment 9018 with <code>code</code>.</p>",
+            "created_time": 1641004218,
+            "id": 9018,
+            "ip_location": "IP 属地：Fixtureland",
+            "like_count": 65
+        },
+        {
+            "author": {
+                "name": "Commenter 9019",
+                "url_token": "commenter-9019"
+            },
+            "collapsed": false,
+            "comment_tag": [
+                {
+                    "text": "Fixture badge 1",
+                    "type": "badge"
+                }
+            ],
+            "content": "<p>Fixture root comment 9019 with <code>code</code>.</p>",
+            "created_time": 1641004219,
+            "id": 9019,
+            "ip_location": "IP 属地：Fixtureland",
+            "like_count": 55
+        },
+        {
+            "author": {
+                "name": "Commenter 9020",
+                "url_token": "commenter-9020"
+            },
+            "collapsed": true,
+            "comment_tag": [
+                {
+                    "text": "Fixture badge 2",
+                    "type": "badge"
+                }
+            ],
+            "content": "<p>Fixture root comment 9020 with <code>code</code>.</p>",
+            "created_time": 1641004220,
+            "id": 9020,
+            "ip_location": "IP 属地：Fixtureland",
+            "like_count": 45
+        }
+    ],
+    "paging": {
+        "is_end": false,
+        "next": "https://www.zhihu.com/api/v4/comment_v5/articles/1010101/root_comment?order_by=score&limit=20&offset=40",
+        "totals": 30
+    }
+}

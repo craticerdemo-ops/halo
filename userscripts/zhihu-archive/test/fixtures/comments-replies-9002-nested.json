@@ -1,0 +1,59 @@
+{
+    "data": [
+        {
+            "author": {
+                "name": "Commenter 8101",
+                "url_token": "commenter-8101"
+            },
+            "content": "<p>Direct reply.</p>",
+            "created_time": 1642100001,
+            "id": 8101,
+            "ip_location": "IP 属地：Nestland",
+            "like_count": 9
+        },
+        {
+            "author": {
+                "name": "Commenter 8102",
+                "url_token": "commenter-8102"
+            },
+            "content": "<p>Reply to the direct reply.</p>",
+            "created_time": 1642100002,
+            "id": 8102,
+            "ip_location": "IP 属地：Nestland",
+            "like_count": 8,
+            "replies": [
+                {
+                    "author": {
+                        "name": "Commenter 8103",
+                        "url_token": "commenter-8103"
+                    },
+                    "content": "<p>Deeper reply without explicit reply_to.</p>",
+                    "created_time": 1642100003,
+                    "id": 8103,
+                    "ip_location": "IP 属地：Nestland",
+                    "like_count": 7
+                }
+            ],
+            "reply_to_author": {
+                "name": "Commenter 8101"
+            }
+        },
+        {
+            "author": {
+                "name": "Commenter 8104",
+                "url_token": "commenter-8104"
+            },
+            "collapsed": true,
+            "content": "<p>Another direct reply.</p>",
+            "created_time": 1642100004,
+            "id": 8104,
+            "ip_location": "IP 属地：Nestland",
+            "like_count": 6
+        }
+    ],
+    "paging": {
+        "is_end": true,
+        "next": null,
+        "totals": 4
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "author": {
+        "name": "Fixture Video Author",
+        "url_token": "fixture-video-author"
+    },
+    "comment_count": 9,
+    "cover_url": "https://pic4.zhimg.com/fixture-video-poster.jpg",
+    "created_at": 1638316800,
+    "description": "Fixture video description",
+    "id": 5050505,
+    "title": "Fixture video title",
+    "video": {
+        "cover_url": "https://pic4.zhimg.com/fixture-video-poster.jpg",
+        "playlist": {
+            "hd": {
+                "url": "https://vdn.vzuu.com/fixture/fixture-video-hd.mp4"
+            },
+            "sd": {
+                "url": "https://vdn.vzuu.com/fixture/fixture-video-sd.mp4"
+            }
+        },
+        "video_id": "v-fixture-1"
+    },
+    "voteup_count": 1234
+}

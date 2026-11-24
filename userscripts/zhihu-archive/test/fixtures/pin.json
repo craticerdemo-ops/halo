@@ -1,0 +1,22 @@
+{
+    "author": {
+        "name": "Fixture Pin Author",
+        "url_token": "fixture-pin-author"
+    },
+    "comment_count": 5,
+    "content": [
+        {
+            "content": "Fixture pin text line one.\nLine two.",
+            "type": "text"
+        },
+        {
+            "original_url": "https://pic3.zhimg.com/fixture-pin.jpg",
+            "type": "image",
+            "url": "https://pic3.zhimg.com/fixture-pin.jpg"
+        }
+    ],
+    "created": 1625097600,
+    "excerpt": "Fixture pin text line one.",
+    "id": 4040404,
+    "like_count": 77
+}
