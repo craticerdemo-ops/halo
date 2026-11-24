@@ -37,36 +37,36 @@ halo/
 
 ## Where to Look
 
-| Task | Location | Notes |
-|------|----------|-------|
-| Add a new extension (custom resource) | `api/.../extension/` (define `@GVK` POJO) + `application/.../infra/SchemeInitializer.java` (register + index specs) | Extension = data resource, NOT a Spring bean |
-| Add a reconciler | `application/.../core/reconciler/` — `@Component implements Reconciler<Request>` | Auto-discovered by `DefaultControllerManager`; runs on virtual threads |
-| Add an API endpoint | `application/.../core/endpoint/{console,uc,theme}/` — split by delivery surface | Mirrors OpenAPI groups: `apis_console`, `apis_uc`, `apis_public`, `apis_extension` |
-| Add an auth mechanism | `application/.../security/authentication/` — `@Component implements SecurityConfigurer` | Applied in `@Order` by `WebServerSecurityConfig` |
-| Add a theme directive | `application/.../theme/dialect/` — Thymeleaf processor in `HaloProcessorDialect` (prefix `halo`) | Engine runs on `boundedElastic` (blocking tolerated) |
-| Add a UI module | `ui/console-src/modules/` or `ui/uc-src/modules/` — `module.ts` exporting `PluginModule` | Auto-loaded via `import.meta.glob` |
-| Change plugin lifecycle | `application/.../core/reconciler/PluginReconciler.java` | CRD-driven: `Plugin.spec.enabled` toggles start/stop |
-| Regenerate API client | `./gradlew generateOpenApiDocs && pnpm -C ui api-client:gen` | Wipes `ui/packages/api-client/src/`; `entry/` is hand-maintained |
+|                 Task                  |                                                      Location                                                       |                                       Notes                                        |
+|---------------------------------------|---------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
+| Add a new extension (custom resource) | `api/.../extension/` (define `@GVK` POJO) + `application/.../infra/SchemeInitializer.java` (register + index specs) | Extension = data resource, NOT a Spring bean                                       |
+| Add a reconciler                      | `application/.../core/reconciler/` — `@Component implements Reconciler<Request>`                                    | Auto-discovered by `DefaultControllerManager`; runs on virtual threads             |
+| Add an API endpoint                   | `application/.../core/endpoint/{console,uc,theme}/` — split by delivery surface                                     | Mirrors OpenAPI groups: `apis_console`, `apis_uc`, `apis_public`, `apis_extension` |
+| Add an auth mechanism                 | `application/.../security/authentication/` — `@Component implements SecurityConfigurer`                             | Applied in `@Order` by `WebServerSecurityConfig`                                   |
+| Add a theme directive                 | `application/.../theme/dialect/` — Thymeleaf processor in `HaloProcessorDialect` (prefix `halo`)                    | Engine runs on `boundedElastic` (blocking tolerated)                               |
+| Add a UI module                       | `ui/console-src/modules/` or `ui/uc-src/modules/` — `module.ts` exporting `PluginModule`                            | Auto-loaded via `import.meta.glob`                                                 |
+| Change plugin lifecycle               | `application/.../core/reconciler/PluginReconciler.java`                                                             | CRD-driven: `Plugin.spec.enabled` toggles start/stop                               |
+| Regenerate API client                 | `./gradlew generateOpenApiDocs && pnpm -C ui api-client:gen`                                                        | Wipes `ui/packages/api-client/src/`; `entry/` is hand-maintained                   |
 
 ## Code Map
 
-| Symbol | Type | Location | Role |
-|--------|------|----------|------|
-| `Application` | `@SpringBootApplication` | `application/.../Application.java:18` | Sole backend entry; scans `run.halo.app`, excludes `IntegrationAutoConfiguration` |
-| `console-src/main.ts` | Vue app entry | `ui/console-src/main.ts` | Console app; `@console` alias, base `/console/` |
-| `uc-src/main.ts` | Vue app entry | `ui/uc-src/main.ts` | User center app; `@uc` alias, base `/uc/` |
-| `Extension` / `@GVK` | Interface / Annotation | `api/.../extension/Extension.java`, `GVK.java` | Core abstraction: Kubernetes-style custom resource (group/version/kind) |
-| `SchemeManager` | Interface | `api/.../extension/SchemeManager.java` | Registers extension types + index specs; impl `DefaultSchemeManager` |
-| `ReactiveExtensionClient` | Interface | `api/.../extension/ReactiveExtensionClient.java` | Reactive CRUD+query for extensions; impl `ReactiveExtensionClientImpl` |
-| `ExtensionClient` | Interface | `api/.../extension/ExtensionClient.java` | Blocking twin — reconcilers only, never request paths |
-| `Reconciler<R>` | Interface | `api/.../extension/controller/Reconciler.java` | Level-triggered reconcile loop; `setupWith(ControllerBuilder)` declares watched GVK |
-| `DefaultControllerManager` | `SmartLifecycle` | `application/.../extension/controller/` | Auto-discovers `Reconciler<Request>` beans, starts controllers |
-| `HaloPluginManager` | `DefaultPluginManager` | `application/.../plugin/HaloPluginManager.java` | PF4J plugin manager; per-plugin Spring `ApplicationContext` |
-| `PluginReconciler` | `Reconciler<Request>` | `application/.../core/reconciler/PluginReconciler.java` | CRD-driven plugin lifecycle (load/start/stop/unload/delete) |
-| `WebServerSecurityConfig` | `@Configuration` | `application/.../infra/config/WebServerSecurityConfig.java` | `@EnableWebFluxSecurity`; SPI pattern via `SecurityConfigurer` beans |
-| `RequestInfoAuthorizationManager` | `ReactiveAuthorizationManager` | `application/.../security/authorization/` | Kubernetes-style RBAC: `PolicyRule` matching (verbs, apiGroups, resources) |
-| `HaloViewResolver` | `ThymeleafReactiveViewResolver` | `application/.../theme/HaloViewResolver.java` | Per-theme cached Thymeleaf engine; finders as static vars |
-| `TemplateEngineManager` | `@Component` | `application/.../theme/TemplateEngineManager.java` | LRU cache (5) of per-theme `HaloTemplateEngine` |
+|              Symbol               |              Type               |                          Location                           |                                        Role                                         |
+|-----------------------------------|---------------------------------|-------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| `Application`                     | `@SpringBootApplication`        | `application/.../Application.java:18`                       | Sole backend entry; scans `run.halo.app`, excludes `IntegrationAutoConfiguration`   |
+| `console-src/main.ts`             | Vue app entry                   | `ui/console-src/main.ts`                                    | Console app; `@console` alias, base `/console/`                                     |
+| `uc-src/main.ts`                  | Vue app entry                   | `ui/uc-src/main.ts`                                         | User center app; `@uc` alias, base `/uc/`                                           |
+| `Extension` / `@GVK`              | Interface / Annotation          | `api/.../extension/Extension.java`, `GVK.java`              | Core abstraction: Kubernetes-style custom resource (group/version/kind)             |
+| `SchemeManager`                   | Interface                       | `api/.../extension/SchemeManager.java`                      | Registers extension types + index specs; impl `DefaultSchemeManager`                |
+| `ReactiveExtensionClient`         | Interface                       | `api/.../extension/ReactiveExtensionClient.java`            | Reactive CRUD+query for extensions; impl `ReactiveExtensionClientImpl`              |
+| `ExtensionClient`                 | Interface                       | `api/.../extension/ExtensionClient.java`                    | Blocking twin — reconcilers only, never request paths                               |
+| `Reconciler<R>`                   | Interface                       | `api/.../extension/controller/Reconciler.java`              | Level-triggered reconcile loop; `setupWith(ControllerBuilder)` declares watched GVK |
+| `DefaultControllerManager`        | `SmartLifecycle`                | `application/.../extension/controller/`                     | Auto-discovers `Reconciler<Request>` beans, starts controllers                      |
+| `HaloPluginManager`               | `DefaultPluginManager`          | `application/.../plugin/HaloPluginManager.java`             | PF4J plugin manager; per-plugin Spring `ApplicationContext`                         |
+| `PluginReconciler`                | `Reconciler<Request>`           | `application/.../core/reconciler/PluginReconciler.java`     | CRD-driven plugin lifecycle (load/start/stop/unload/delete)                         |
+| `WebServerSecurityConfig`         | `@Configuration`                | `application/.../infra/config/WebServerSecurityConfig.java` | `@EnableWebFluxSecurity`; SPI pattern via `SecurityConfigurer` beans                |
+| `RequestInfoAuthorizationManager` | `ReactiveAuthorizationManager`  | `application/.../security/authorization/`                   | Kubernetes-style RBAC: `PolicyRule` matching (verbs, apiGroups, resources)          |
+| `HaloViewResolver`                | `ThymeleafReactiveViewResolver` | `application/.../theme/HaloViewResolver.java`               | Per-theme cached Thymeleaf engine; finders as static vars                           |
+| `TemplateEngineManager`           | `@Component`                    | `application/.../theme/TemplateEngineManager.java`          | LRU cache (5) of per-theme `HaloTemplateEngine`                                     |
 
 ## Commands
 

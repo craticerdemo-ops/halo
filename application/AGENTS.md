@@ -35,13 +35,13 @@ Resources:
 
 ## Key Subsystems
 
-| Subsystem | Entry Point | Notes |
-|-----------|-------------|-------|
-| Extension runtime | `DefaultControllerManager` | `SmartLifecycle`; auto-discovers `Reconciler<Request>` beans, runs on virtual threads |
-| Plugin system | `HaloPluginManager` | PF4J `DefaultPluginManager`; CRD-driven lifecycle via `PluginReconciler` (`Plugin.spec.enabled`) |
-| Security | `WebServerSecurityConfig` | `@EnableWebFluxSecurity`; SPI via `SecurityConfigurer` beans applied in `@Order` |
-| RBAC | `RequestInfoAuthorizationManager` | K8s-style: `PolicyRule` matching (verbs, apiGroups, resources) |
-| Theme engine | `HaloViewResolver` + `TemplateEngineManager` | Per-theme cached Thymeleaf; runs on `boundedElastic` (blocking tolerated via `ReactiveUtils.BLOCKING_TIMEOUT` 10s) |
+|     Subsystem     |                 Entry Point                  |                                                       Notes                                                        |
+|-------------------|----------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| Extension runtime | `DefaultControllerManager`                   | `SmartLifecycle`; auto-discovers `Reconciler<Request>` beans, runs on virtual threads                              |
+| Plugin system     | `HaloPluginManager`                          | PF4J `DefaultPluginManager`; CRD-driven lifecycle via `PluginReconciler` (`Plugin.spec.enabled`)                   |
+| Security          | `WebServerSecurityConfig`                    | `@EnableWebFluxSecurity`; SPI via `SecurityConfigurer` beans applied in `@Order`                                   |
+| RBAC              | `RequestInfoAuthorizationManager`            | K8s-style: `PolicyRule` matching (verbs, apiGroups, resources)                                                     |
+| Theme engine      | `HaloViewResolver` + `TemplateEngineManager` | Per-theme cached Thymeleaf; runs on `boundedElastic` (blocking tolerated via `ReactiveUtils.BLOCKING_TIMEOUT` 10s) |
 
 ## Conventions
 

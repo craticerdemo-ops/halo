@@ -22,14 +22,14 @@ api/src/main/java/run/halo/app/
 
 ## Key Abstractions
 
-| Symbol | Role |
-|--------|------|
-| `Extension` / `@GVK` | Base interface + annotation for Kubernetes-style custom resources (group/version/kind). Extensions are POJOs, NOT Spring beans. |
-| `SchemeManager` | Registers extension types + index specs. Impl: `DefaultSchemeManager` (in `application/`). |
-| `ReactiveExtensionClient` | Reactive CRUD + query for extensions. Impl: `ReactiveExtensionClientImpl`. Use this in request paths. |
-| `ExtensionClient` | Blocking twin of the reactive client. **Reconcilers only** — never in request paths. |
-| `Reconciler<Request>` | Level-triggered reconcile loop. `setupWith(ControllerBuilder)` declares watched GVKs. Auto-discovered by `DefaultControllerManager`. |
-| `IndexEngine` / `ValueIndexSpec` | In-memory index over extension fields (2.22+). Prefer over deprecated `IndexSpec`/`QueryFactory`/`IndexedQueryEngine`. |
+|              Symbol              |                                                                 Role                                                                 |
+|----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `Extension` / `@GVK`             | Base interface + annotation for Kubernetes-style custom resources (group/version/kind). Extensions are POJOs, NOT Spring beans.      |
+| `SchemeManager`                  | Registers extension types + index specs. Impl: `DefaultSchemeManager` (in `application/`).                                           |
+| `ReactiveExtensionClient`        | Reactive CRUD + query for extensions. Impl: `ReactiveExtensionClientImpl`. Use this in request paths.                                |
+| `ExtensionClient`                | Blocking twin of the reactive client. **Reconcilers only** — never in request paths.                                                 |
+| `Reconciler<Request>`            | Level-triggered reconcile loop. `setupWith(ControllerBuilder)` declares watched GVKs. Auto-discovered by `DefaultControllerManager`. |
+| `IndexEngine` / `ValueIndexSpec` | In-memory index over extension fields (2.22+). Prefer over deprecated `IndexSpec`/`QueryFactory`/`IndexedQueryEngine`.               |
 
 ## Conventions
 
