@@ -16,6 +16,13 @@ The system SHALL provide a capture client that runs in the user's authenticated 
 - **THEN** the capture client SHALL collect the article body, author, original publish time, like count, comment count, and the selected comments
 - **AND** it SHALL submit a normalized payload to the configured Halo endpoint using a Personal Access Token
 
+#### Scenario: Article detail API requires a signature
+
+- **WHEN** Zhihu rejects the article detail API with a signature error (`code 10003`) or the API is otherwise unavailable
+- **THEN** the capture client SHALL read the article body from the page's embedded SSR state (`script#js-initialData`), then the column article API, then the rendered article DOM
+- **AND** it SHALL report which fallback supplied the article as a warning
+- **AND** it SHALL abort without submitting when no source yields the article body
+
 #### Scenario: Unsupported URL type
 
 - **WHEN** the user activates capture on a Zhihu URL that is not an article, answer, pin, or video
@@ -31,7 +38,14 @@ The system SHALL provide a capture client that runs in the user's authenticated 
 - **WHEN** `comment_v5` returns `200` with an empty `data` array while the source reports a non-zero comment count
 - **THEN** the capture client SHALL retry the legacy `/api/v4/<resource>/<id>/comments` list before selecting comments
 - **AND** it SHALL fall back to `api.zhihu.com/comments/<rootId>/child_comments` for replies when the v5 child list is empty or the roots came from the legacy list
-- **AND** if both channels return no root comments, it SHALL abort with `COMMENTS_UNAVAILABLE` instead of submitting a snapshot with a zero-length comment list
+- **AND** if both channels respond successfully but contain no root comments, it SHALL abort with `COMMENTS_UNAVAILABLE` instead of submitting a snapshot with a zero-length comment list
+
+#### Scenario: Comment APIs unreachable
+
+- **WHEN** a Zhihu comment request fails at the network layer (CORS, a redirect to a login/WAF page, or an offline connection) while the source content is already available
+- **THEN** the capture client SHALL retry that single request once through `GM_xmlhttpRequest`
+- **AND** if the comment APIs remain unreachable, it SHALL submit the snapshot with an empty comment list and report the failing channels as warnings instead of aborting
+- **AND** it SHALL still abort on risk control (`40362`) without submitting
 
 ### Requirement: Capture payload contract
 

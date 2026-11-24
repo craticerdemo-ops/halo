@@ -42,7 +42,7 @@ Use an ordinary `SinglePage` for each snapshot, labeled `content.halo.run/zhihu-
 
 Ship a userscript that runs on supported Zhihu pages, collects the payload with same-origin `fetch`, and posts it to Halo with `GM_xmlhttpRequest` and a PAT.
 
-- **Why**: the page context supplies the logged-in cookies, the browser fingerprint, and Zhihu's own request-signing wrapper, so no signature port or cookie storage is needed. `GM_xmlhttpRequest` bypasses CORS without weakening Halo's CORS policy.
+- **Why**: the page context supplies the logged-in cookies and the browser fingerprint, so no cookie storage is needed, and `GM_xmlhttpRequest` bypasses CORS without weakening Halo's CORS policy. The page's raw `fetch` does **not** inherit Zhihu's `x-zse-96` signing, so capture reads article data that does not require it (see D13).
 - **Alternatives**:
   - *Server-side fetch with user cookies*: rejected. Requires porting `x-zse-96`, minting `__zse_ck`, residential IPs, and stores session tickets; breaks monthly and violates Zhihu's terms.
   - *Chrome extension*: equivalent capability with host permissions, but adds store distribution and review. The payload contract is identical, so an extension can reuse it.
@@ -135,6 +135,22 @@ Deleting an archive through the console permanently removes the labeled `SingleP
 - **Why**: capture is idempotent by source and `create()` does not replace the content of an existing page, so a soft-deleted or surviving page would make a corrected re-capture silently return the old content. Permanent deletion is the only reliable reset.
 - **Alternatives**: rewrite the existing page in place (rejected: breaks snapshot immutability and provenance); soft delete only (rejected: the page still blocks re-capture and leaves orphaned versions); edit the database directly (rejected: bypasses finalizers and leaves orphaned snapshots).
 - **Consequences**: the action is irreversible and requires explicit confirmation; the endpoint polls for up to 5 seconds for the finalizer to finish; the index rebuild is best-effort so a failed rebuild does not report the already-completed delete as failed. Deleting through normal `SinglePage` management remains possible but does not rebuild the index automatically.
+
+### D13: Read articles from page state before the signature-gated API
+
+Zhihu answers `www.zhihu.com/api/v4/articles/<id>` with `403` code `10003` because that endpoint requires an `x-zse-96` signature, which the userscript deliberately does not mint. Article capture therefore reads, in order: the SSR entity in `script#js-initialData` (`initialState.entities.articles[<id>]`), the column API `https://zhuanlan.zhihu.com/api/articles/<id>`, then the rendered article DOM (`.Post-RichText`, `.Post-Title`, `.AuthorInfo-name`, `.ContentItem-time`).
+
+- **Why**: all three sources describe content the signed-in user can already see; the SSR entity is the cleanest and needs no request, while the DOM reader keeps capture possible when SSR state is absent. Comment capture is unaffected because `comment_v5` is gated by login, not by `x-zse-96`.
+- **Alternatives**: mint `x-zse-96` (rejected: reverse-engineering Zhihu's obfuscated signer is brittle and out of scope); scrape another host (rejected: same gate, adds a dependency); fail with the raw `10003` (rejected: blocks an article the browser has already rendered).
+- **Consequences**: the payload shape is normalized from snake_case (API) and camelCase (page state) into one form, so each source is covered by fixture tests. A fallback is surfaced as a warning; if none of the three sources yields a body, the capture aborts with the original error. Very long articles may be truncated by Zhihu's SSR; the DOM reader reads the rendered body, which is the same content the user sees.
+
+### D14: One transport fallback and best-effort comments
+
+A page-context `fetch` to `www.zhihu.com` can fail at the network layer on a `zhuanlan.zhihu.com` tab (CORS or a WAF redirect) even though the same endpoint works from a `www.zhihu.com` tab. When `fetch` rejects, the client retries that single URL once through `GM_xmlhttpRequest`, which runs outside the page's CORS policy; HTTP-level responses (`403`/`404`/`10003`/`40353`/`40362`) are never retried.
+
+- **Why**: the article body is the primary capture; a CORS failure on the legacy comment list should not discard a body that was already read. One bounded fallback keeps the "never loop" rule.
+- **Alternatives**: mint signatures (rejected, see D13); ask the user to capture from a `www.zhihu.com` tab (rejected: articles have no equivalent `www` URL); retry repeatedly (rejected: risk control).
+- **Consequences**: if both comment channels stay unreachable, the snapshot is submitted with an empty comment list and a warning naming the failing channels; the source's `commentCount` is preserved while `comments.total` is `0`. Risk control (`40362`) still aborts, and re-capturing comments requires deleting the snapshot.
 
 ## Risks / Trade-offs
 
